@@ -4,9 +4,10 @@
 #include<stdio.h>
 #include<easyx.h>
 #include<conio.h>
-#include<mmsystem.h>				    
+#include<mmsystem.h>			
+#include<Windows.h>
 #pragma comment(lib,"winmm.lib")
-#define WIDTH 1400
+#define WIDTH 1600
 #define HEIGHT 800
 
 
@@ -22,7 +23,8 @@ int judgeMessage(int x,int y);                //判断鼠标点击的按钮
 
 int main() {
 	int message=0,x=0,y=0;
-	int music = -1,Isinitial=0;              //音乐播放器状态，若Isinitial!=1,表明不是初次开始播放，music==1表示正在播放，music==-1则处于暂停
+	int music = -1,Isinitial=0; //音乐播放器状态，若Isinitial!=1,表明不是初次开始播放，music==1表示正在播放，music==-1则处于暂停
+	int isExit = 0;				//判断是否退出
 	USER user;
 	user.score = 0;
 	MOUSEMSG m;
@@ -35,10 +37,13 @@ int main() {
 			y = m.y;									// y为纵坐标
 			message=judgeMessage(x,y);
 			switch (message) {
-			case 4:
-				exit;
+			case 6:
+				isExit = MessageBox(NULL,"确定要退出游戏吗？", "提示", MB_YESNO| MB_SYSTEMMODAL);
+				if (isExit == 6) {
+					exit(0);
+				}
 				break;
-			case 5:
+			case 7:
 				music = -music;
 				Isinitial++;
 				playMusic(music, Isinitial);
@@ -53,33 +58,42 @@ int main() {
 }
 
 void initback() {
-	IMAGE b1,b11, b2,b22,b3,b33,b4,b44,music;
+	IMAGE start,add,hint,exit,save,read,music,music_mask,button_mask;
 	initgraph(WIDTH, HEIGHT, SHOWCONSOLE);
 	loadimage(NULL, "image\\background.jpg", WIDTH, HEIGHT);
 	setlinecolor(BLACK);
-	loadimage(&b1, "image\\button_1.jpg", 120, 80);
-	//loadimage(&b11, "image\\button_11.jpg", 120, 80);
-	putimage(WIDTH - 300, HEIGHT / 2, &b1);
-	//putimage(WIDTH - 300, HEIGHT / 2, &b11);
-	loadimage(&b2, "image\\button_2.jpg", 120, 80);
-	//loadimage(&ib2, "image\\Invertbutton_2.jpg", 120, 80);
-	putimage(WIDTH - 150, HEIGHT / 2, &b2);
-	//putimage(WIDTH - 150, HEIGHT / 2, &b22);
-	loadimage(&b3, "image\\button_3.jpg", 120, 80);
-	//loadimage(&b33, "image\\button_33.jpg", 120, 80);
-	putimage(WIDTH - 300, HEIGHT / 2+100, &b3);
-	//putimage(WIDTH - 300, HEIGHT / 2 + 100, &b33);
-	loadimage(&b4, "image\\button_4.jpg", 120, 80);
-	//loadimage(&b44, "image\\button_44.jpg", 120, 80);
-	putimage(WIDTH - 150, HEIGHT / 2 + 100, &b4);
-	//putimage(WIDTH - 150, HEIGHT / 2 + 100, &b44);
-	loadimage(&music, "image\\music.png", 120, 80);
-	putimage(WIDTH - 300, HEIGHT / 2 + 200, &music);
 
+	loadimage(&button_mask,"image\\button_mask.jpg", 120, 80);           //加载按钮掩码图
 
+	loadimage(&start, "image\\start.jpg", 120, 80);                       //制作开始按钮
+	putimage(WIDTH - 300, HEIGHT / 2, &button_mask,SRCAND);
+	putimage(WIDTH - 300, HEIGHT / 2, &start, SRCPAINT);
 
-	//loadimage(&b2,"image"\\button_2.jpg,100,60);
-	//loadimage(&ib2,"image\\Invertbutton_2")
+	loadimage(&add, "image\\add.jpg", 120, 80);							//制作增加按钮
+	putimage(WIDTH - 300, HEIGHT / 2 + 200, &button_mask, SRCAND);
+	putimage(WIDTH - 300, HEIGHT / 2 + 200, &add,SRCPAINT);
+    
+	loadimage(&hint, "image\\hint.jpg", 120, 80);					//制作提示按钮
+	putimage(WIDTH - 300, HEIGHT / 2 + 100, &button_mask,SRCAND);
+	putimage(WIDTH - 300, HEIGHT / 2 + 100, &hint,SRCPAINT);
+
+	loadimage(&read, "image\\read.jpg", 120, 80);					//制作读取按钮
+	putimage(WIDTH - 150, HEIGHT / 2 + 100, &button_mask,SRCAND);
+	putimage(WIDTH - 150, HEIGHT / 2 + 100, &read, SRCPAINT);
+
+	loadimage(&save, "image\\save.jpg", 120, 80);						//制作存档按钮
+	putimage(WIDTH - 150, HEIGHT / 2, &button_mask, SRCAND);
+	putimage(WIDTH - 150, HEIGHT / 2, &save, SRCPAINT);
+
+	loadimage(&exit, "image\\exit.jpg", 120, 80);						//制作退出按钮
+	putimage(WIDTH - 150, HEIGHT / 2 + 200, &button_mask,SRCAND);
+	putimage(WIDTH - 150, HEIGHT / 2 + 200, &exit, SRCPAINT);
+
+	loadimage(&music, "image\\music.jpg", 330, 80);						//制作背景音乐播放器按钮
+	loadimage(&music_mask, "image\\music_mask.jpg", 330, 80);
+	putimage(WIDTH - 330, HEIGHT / 2 + 300, &music_mask,SRCAND);
+	putimage(WIDTH - 330, HEIGHT / 2 + 300, &music,SRCINVERT);
+
 }
 
 
@@ -100,6 +114,12 @@ int judgeMessage(int x, int y) {
 	}
 	else if (x > WIDTH - 300 && x<WIDTH - 180 && y>HEIGHT / 2 + 200 && y < HEIGHT / 2 + 280) {
 		message = 5;
+	}
+	else if (x > WIDTH - 150 && x<WIDTH - 30 && y>HEIGHT / 2 + 200 && y < HEIGHT / 2 + 280) {
+		message = 6;
+	}
+	else if (x > WIDTH - 305 && x<WIDTH-25 && y>HEIGHT / 2 + 300 && y < HEIGHT / 2 + 380)	{
+		message = 7;
 	}
 	else {
 		message = 0;
