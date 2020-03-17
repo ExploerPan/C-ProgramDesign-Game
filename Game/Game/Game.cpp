@@ -26,57 +26,115 @@ typedef struct Problem {
 	struct Problem* next;
 }PROBLEM;
 
+typedef struct bomb {
+	int x, y;
+	int RightResult;
+	bool isRight = false;
+	struct bomb* next;
+}Bomb;
+
+IMAGE refresh1,refresh2,bomb, bomb_mask;
+
 void init(USER& user);
-void initback();									 //初始化背景
-void initbomb();									//初始化炸弹图片
+void initback();									 //初始化背景									
 void playMusic(int a,int b);						 //a.b表示音乐播放状态
 int judgeMessage(int x,int y);						//判断鼠标点击的按钮
 void newProblem(int* r,int* n1,int *n2,char *op);				//为每一个结点生成题目
-void playGame();
+void playGame(Bomb bomb1,Bomb bomb2,Bomb bomb3);
+int moveBomb(Bomb& bomb1,Bomb& bomb2,Bomb& bomb3,int isFinish);
+Problem *initProblem();
+
 
 
 
 int main() {
-	int message=0,x=0,y=0;
-	int music = -1,Isinitial=0; //音乐播放器状态，若Isinitial!=1,表明不是初次开始播放，music==1表示正在播放，music==-1则处于暂停
-	int isExit = 0;				//判断是否退出
+	int message = 0, x = 0, y = 0,k=0;
+	int music = -1, Isinitial = 0; //音乐播放器状态，若Isinitial!=1,表明不是初次开始播放，music==1表示正在播放，music==-1则处于暂停
+	int isStart = 0, isExit = 0,isFinish = 0;  //判断是否已经开始游戏，判断是否退出,判断上一道题是否回答结束
+	int n = 0, choice = 5;
+	char s[5];
 	USER user;
+	PROBLEM* head;
 	user.score = 0;
 	MOUSEMSG m;
+	Bomb bomb1 = { WIDTH - 1000,0,0 };						//参数为 起始位置 x,y   存储的结果
+	Bomb bomb2 = { WIDTH - 600,-250,0 };
+	Bomb bomb3 = { WIDTH - 900,-500,0 };
 	init(user);
 	initback();
-	initbomb();
+	
 	while (1) {
-		m = GetMouseMsg();
-		if (m.uMsg == WM_LBUTTONDOWN) {
-			x = m.x;                                 //x为横坐标
-			y = m.y;									// y为纵坐标
-			message = judgeMessage(x, y);
+		k=moveBomb(bomb1, bomb2, bomb3,isFinish);
+		isFinish = 0;
+		bomb1.y += 5;
+		bomb2.y += 5;
+		bomb3.y += 5;
+		if (bomb1.y == HEIGHT) {
+			bomb1.y = 0;
+		}
+		else if (bomb2.y == HEIGHT) {
+			bomb2.y = 0;
+		}
+		else if (bomb3.y == HEIGHT) {
+			bomb3.y = 0;
+		}
+		
+		while (MouseHit()) {
+			m = GetMouseMsg();
+			if (m.uMsg == WM_LBUTTONDOWN) {
+				x = m.x;                                 //x为横坐标
+				y = m.y;									// y为纵坐标
+				message = judgeMessage(x, y);
 
-			switch (message) {
-			case 1:
-				playGame();
-				break;
+				switch (message) {
+				case 1:
+					isFinish = 1;
+					break;
 
-			case 6:
-				isExit = MessageBox(NULL, "确定要退出游戏吗？", "提示", MB_YESNO | MB_SYSTEMMODAL);
-				if (isExit == 6) {
-					exit(0);
+				case 6:
+					isExit = MessageBox(NULL, "确定要退出游戏吗？", "提示", MB_YESNO | MB_SYSTEMMODAL);
+					if (isExit == 6) {
+						exit(0);
+					}
+					break;
+				case 7:
+					music = -music;
+					Isinitial++;
+					playMusic(music, Isinitial);
+					break;
+				default:
+					if (m.x > bomb1.x&& m.x<bomb1.x + 240 && m.y>bomb1.y&& m.y < bomb1.y + 160) {
+						choice = 1;
+
+					}
+					else if (m.x > bomb2.x&& m.x<bomb2.x + 240 && m.y>bomb2.y&& m.y < bomb2.y + 160) {
+						choice = 2;
+					}
+					else if (m.x > bomb3.x&& m.x<bomb3.x + 240 && m.y>bomb3.y&& m.y < bomb3.y + 160) {
+						choice = 3;
+					}
+				
+					break;
 				}
-				break;
-			case 7:
-				music = -music;
-				Isinitial++;
-				playMusic(music, Isinitial);
-				break;
-			default:
-				continue;
+
+
+				if (choice == k) {
+					isFinish = 1;
+					user.score += 10;
+				}
+				else if (choice == 5) {
+				}
+				else {
+					EndBatchDraw();
+					MessageBox(NULL, "拆弹失败了！", "游戏结束", MB_OK | MB_SYSTEMMODAL);
+					isFinish = 1;
+				}
 			}
 		}
 	}
-	_getch();
 	return 0;
 }
+
 
 void init(USER& user)
 {
@@ -135,17 +193,14 @@ void initback() {
 	setbkmode(TRANSPARENT);
 	outtextxy(WIDTH - 250, HEIGHT / 2 - 100, "当前题目");
 
-}
+	getimage(&refresh1, WIDTH - 1000, 0, 650, HEIGHT);
+	getimage(&refresh2, WIDTH - 300, HEIGHT / 2 - 50, 240, 25);
 
-void initbomb() {
-	IMAGE bomb, bomb_mask;
-	int x = WIDTH - 1000, y = 0;
 	loadimage(&bomb, "image\\bomb.jpg", 240, 160);
 	loadimage(&bomb_mask, "image\\bomb_mask.jpg", 240, 160);
-	putimage(x, y, &bomb_mask, SRCAND);
-	putimage(x, y, &bomb, SRCPAINT);
-	
+
 }
+
 
 int judgeMessage(int x, int y) {
 	int message;
@@ -191,9 +246,9 @@ void playMusic(int a,int b) {
 
 PROBLEM *initProblem() {
 	int num = 1;
-	int num1 = 0, num2 = 0, res = 0;
+	int num1 = 0, num2 = 0,res=0;
 	char ope = '+';								
-	int* a = &res;								//存储表达式的结果
+	int* a = &res;						//存储表达式的结果
 	int* b = &num1;							//生成的第一个数字
 	int* c = &num2;							//生成的第二个数字
 	char* op = &ope;						////生成的运算符号
@@ -226,14 +281,15 @@ PROBLEM *initProblem() {
 }
 
 void newProblem(int* r,int* n1,int* n2,char* op) {
-	int op_kind;
+	int op_kind,isInteger;
 	srand((int)time(NULL));
 	*n1 = rand() % 101;
 	*n2 = rand() % 101;
-	op_kind = rand() % 5;
+	op_kind = rand() % 3+1;
 	switch (op_kind) {
 	case 1:
 		*op = '+';
+		*r = *n1 + *n2;
 		break;
 	case 2:
 		*op = '-';
@@ -243,23 +299,21 @@ void newProblem(int* r,int* n1,int* n2,char* op) {
 		*op = '*';
 		*r = *n1 * *n2;
 		break;
-	case 4:
-		*op = '/';
-		*r = *n1 / *n2;
-		break;
+	
 	}
 	
 }
 
+int moveBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3,int isFinish) {
+	char s[5];
+	int k, n;
+	Problem* head;
 
-
-void playGame() {
-	char s[5];							//声明数组，用来存放字符串 
-	PROBLEM* head;
 	head = initProblem();
-
-	while (head != NULL) {
-		_stprintf_s(s, "%d", head->number1);					//将整型转换成字符串
+	if (isFinish == 1) {
+		clearrectangle(WIDTH - 300, HEIGHT/2-50, WIDTH - 60, HEIGHT/2-25);
+		putimage(WIDTH-300,HEIGHT/2-50, &refresh2);
+		_stprintf_s(s, "%d", head->number1);					//将整型转换成字符串，打印题目
 		outtextxy(WIDTH - 300, HEIGHT / 2 - 50, s);
 
 		outtextxy(WIDTH - 240, HEIGHT / 2 - 50, head->operation);
@@ -270,16 +324,68 @@ void playGame() {
 		outtextxy(WIDTH - 140, HEIGHT / 2 - 50, "=");
 
 		outtextxy(WIDTH - 80, HEIGHT / 2 - 50, "?");
-		
+
+		n = rand() % 3+1;
+		switch (n) {
+		case 1:
+			bomb1.RightResult = head->result;
+			printf("%d", bomb1.RightResult);
+			bomb1.isRight = true;
+			bomb2.RightResult = rand() % 201;
+			bomb3.RightResult = rand() % 101;
+			break;
+		case 2:
+			bomb2.RightResult = head->result;
+			printf("%d",bomb2.RightResult);
+			bomb2.isRight = true;
+			bomb1.RightResult = rand() % 201;
+			bomb3.RightResult = rand() % 101;
+			break;
+		case 3:
+			bomb3.RightResult = head->result;
+			printf("%d", bomb3.RightResult);
+			bomb3.isRight = true;
+			bomb2.RightResult = rand() % 201;
+			bomb1.RightResult = rand() % 101;
+			break;
+		}
 		head = head->next;
 	}
-	
+			if (bomb1.isRight) {
+				k = 1;
+			}
+			else if (bomb2.isRight) {
+				k = 2;
+			}
+			else if(bomb3.isRight){
+				k = 3;
+			}
+		
+		BeginBatchDraw();
+		putimage(bomb1.x, bomb1.y, &bomb_mask, SRCAND);
+		putimage(bomb1.x, bomb1.y, &bomb, SRCPAINT);
+		_stprintf_s(s, "%d",bomb1.RightResult);
+		outtextxy(bomb1.x + 60, bomb1.y + 80, s);
+
+		putimage(bomb2.x, bomb2.y, &bomb_mask, SRCAND);
+		putimage(bomb2.x, bomb2.y, &bomb, SRCPAINT);
+		_stprintf_s(s, "%d",bomb2.RightResult);
+		outtextxy(bomb2.x + 60, bomb2.y + 80, s);
+
+		putimage(bomb3.x, bomb3.y, &bomb_mask, SRCAND);
+		putimage(bomb3.x, bomb3.y, &bomb, SRCPAINT);
+		_stprintf_s(s, "%d",bomb3.RightResult);
+		outtextxy(bomb3.x + 60, bomb3.y + 80, s);
+
+		FlushBatchDraw();
+
+		clearrectangle(WIDTH - 1000, 0, WIDTH - 350, HEIGHT);
+		putimage(WIDTH - 1000, 0, &refresh1);
+
+		Sleep(100);
+		return k;
+
 }
-	
-
-
-
-
 
 
 // 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
