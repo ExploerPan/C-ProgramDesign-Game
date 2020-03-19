@@ -11,7 +11,6 @@
 #define PROBLEMNUMBER 15
 
 
-
 typedef struct {
 	char name[20];
 	int score;
