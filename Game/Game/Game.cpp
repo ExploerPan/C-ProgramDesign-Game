@@ -4,7 +4,6 @@
 #include<easyx.h>
 #include<conio.h>
 #include<mmsystem.h>	
-#include <tchar.h>
 #pragma comment(lib,"winmm.lib")
 #define WIDTH 1600
 #define HEIGHT 800
@@ -30,13 +29,14 @@ typedef struct bomb {
 	bool isRight = false;
 }Bomb;
 
-IMAGE refresh1, refresh2, bomb, bomb_mask;
+IMAGE refresh1, refresh2,refresh3, bomb, bomb_mask;
 
-void init(USER& user);
+void initwelcome(USER& user);
 void initback();									 //初始化背景									
 void playMusic(int a, int b);						 //a.b表示音乐播放状态
 int judgeMessage(int x, int y);						//判断鼠标点击的按钮
-void showProblem(Problem *head,int isFinish,int problemNum);		//刷新显示题目
+void showUserinfo(USER& user);
+void showProblem(Problem *head,int isFinish,int problemNum, USER& user);		//刷新显示题目
 void showBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);				//显示炸弹
 void setAnswer(Problem* head, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum, int isFinish);//显示答案及标出正确炸弹的信息
 int judgechoice(int x,int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);	//判断玩家选择的答案
@@ -55,12 +55,13 @@ int main() {
 	Bomb bomb1 = { WIDTH - 1000,0,0 };						//参数为 起始位置 x,y   存储的结果
 	Bomb bomb2 = { WIDTH - 600,-250,0 };
 	Bomb bomb3 = { WIDTH - 900,-500,0 };
-	init(user);
+	initwelcome(user);
 	initback();
 	head = initProblem();
 	p = head;
 	while (1) {
-		showProblem(head,isFinish,problemNum);
+		showUserinfo(user);
+		showProblem(head,isFinish,problemNum,user);
 		setAnswer(head,bomb1, bomb2, bomb3,problemNum,isFinish);
 		showBomb(bomb1,bomb2,bomb3);
 		isFinish = 0;
@@ -94,9 +95,15 @@ int main() {
 						problemNum++;
 						user.score += 10;
 					}
-					else if (!judgeTorF(choice, bomb1, bomb2, bomb3)) {
+					else if(!judgeTorF(choice, bomb1, bomb2, bomb3)){
 						isFinish = 1;
 						problemNum++;
+						user.score = 0;
+						mciSendString("open music\\explode.mp3", 0, 0, 0);
+						mciSendString("play music\\explode.mp3 ", 0, 0, 0);
+						MessageBox(NULL, "拆错了一个炸弹！\n您的分数将被清零/(ㄒoㄒ)/~~", "提示", MB_OK | MB_SYSTEMMODAL);
+						Sleep(500);
+						mciSendString("close music\\explode.mp3 ", 0, 0, 0);
 					}
 					else {
 
@@ -110,19 +117,23 @@ int main() {
 	return 0;
 }
 
-void init(USER& user)
+void initwelcome(USER& user)
 {
+	mciSendString("open music\\welcomemusic.mp3", 0, 0, 0);
+	mciSendString("play music\\welcomemusic.mp3 repeat", 0, 0, 0);
 	initgraph(WIDTH, HEIGHT);
 	loadimage(NULL, "image\\welcomebackground.jpg", WIDTH, HEIGHT);
 
-	InputBox(user.name, 20, "请输入用户名：");
-	outtextxy(WIDTH / 2 + 400, HEIGHT / 2 - 200, "Name: ");
+	InputBox(user.name, 20, "请输入您的昵称：");
+	outtextxy(WIDTH / 2 + 400, HEIGHT / 2 - 200, "昵称： ");
 	outtextxy(WIDTH / 2 + 450, HEIGHT / 2 - 200, user.name);
 
 	char buf[10];
 	sprintf_s(buf, "%d", user.score);   //user.score为整型，outtextxy要求输出的是 char[]
 	outtextxy(WIDTH / 2 + 400, HEIGHT / 2 - 150, "Score: ");
 	outtextxy(WIDTH / 2 + 450, HEIGHT / 2 - 150, buf);
+
+	mciSendString("close music\\welcomemusic.mp3", 0, 0, 0);
 }
 
 void initback() {
@@ -167,8 +178,9 @@ void initback() {
 	setbkmode(TRANSPARENT);
 	outtextxy(WIDTH - 250, HEIGHT / 2 - 100, "当前题目");
 
-	getimage(&refresh1, WIDTH - 1000, 0, 650, HEIGHT);
-	getimage(&refresh2, WIDTH - 300, HEIGHT / 2 - 50, 240, 25);
+	getimage(&refresh1, WIDTH - 1000, 0, 650, HEIGHT);						//刷新炸弹显示区
+	getimage(&refresh2, WIDTH - 300, HEIGHT / 2 - 50, 300, 50);				//刷新当前题目
+	getimage(&refresh3, WIDTH - 349, HEIGHT / 2 - 325, 349, 80);			//刷新分数
 
 	loadimage(&bomb, "image\\bomb.jpg", 240, 160);
 	loadimage(&bomb_mask, "image\\bomb_mask.jpg", 240, 160);
@@ -207,14 +219,14 @@ int judgeMessage(int x, int y) {
 
 void playMusic(int a, int b) {
 	if (a == 1 && b == 1) {
-		mciSendString("open music.mp3", 0, 0, 0);
-		mciSendString("play music.mp3 repeat", 0, 0, 0);
+		mciSendString("open music\\gamemusic.mp3", 0, 0, 0);
+		mciSendString("play music\\gamemusic.mp3 repeat", 0, 0, 0);
 	}
 	else if (a == 1 && b != 1) {
-		mciSendString("pause music.mp3", 0, 0, 0);
+		mciSendString("pause music\\gamemusic.mp3", 0, 0, 0);
 	}
 	else if (a == -1 && b != 1) {
-		mciSendString("resume music.mp3", 0, 0, 0);
+		mciSendString("resume music\\gamemusic.mp3", 0, 0, 0);
 	}
 }
 
@@ -263,7 +275,19 @@ PROBLEM* initProblem() {
 	
 }
 
-void showProblem(Problem* head,int isFinish,int problemNum){
+void showUserinfo(USER& user) {
+	char buf[10];
+	clearrectangle(WIDTH-350,HEIGHT/2-325,WIDTH-150,HEIGHT/2-275);
+	putimage(WIDTH-349,HEIGHT/2-325,&refresh3);
+	outtextxy(WIDTH - 300, HEIGHT/2-350, "昵称: ");
+	outtextxy(WIDTH - 200, HEIGHT/2-350, user.name);
+	sprintf_s(buf, "%d", user.score);   //user.score为整型，outtextxy要求输出的是 char[]
+	outtextxy(WIDTH - 300, HEIGHT / 2 - 300, "分数: ");
+	outtextxy(WIDTH - 200, HEIGHT / 2 - 300, buf);
+	
+}
+
+void showProblem(Problem* head,int isFinish,int problemNum,USER&user){
 	char s[10];
 	if (isFinish == 1&&problemNum<=PROBLEMNUMBER) {
 		while (head->num != problemNum) {
@@ -284,7 +308,11 @@ void showProblem(Problem* head,int isFinish,int problemNum){
 		outtextxy(WIDTH - 90, HEIGHT / 2 - 50, "?");
 	}
 	else if (problemNum > PROBLEMNUMBER) {
-		MessageBox(NULL, "恭喜您通关了！！\n 还要再挑战一次吗？", "游戏结束", MB_YESNO | MB_SYSTEMMODAL);
+		wsprintf(s, "%d", user.score);
+		MessageBox(NULL, "已经没有炸弹了", "提示", MB_OK | MB_SYSTEMMODAL);
+		MessageBox(NULL,s, "您的得分：",MB_SYSTEMMODAL);
+		MessageBox(NULL, "还要再来一局吗？(●'◡'●)", "提示", MB_YESNO | MB_SYSTEMMODAL);
+		exit(0);
 	}
 
 	
@@ -397,17 +425,7 @@ bool judgeTorF(int choice, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3) {
 		return true;
 	}
 	else {
-		MessageBox(NULL, "拆弹失败了！", "游戏结束", MB_OK | MB_SYSTEMMODAL);
+		
 		return false;
 	}
 }
-// 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
-// 调试程序: F5 或调试 >“开始调试”菜单
-
-// 入门使用技巧: 
-//   1. 使用解决方案资源管理器窗口添加/管理文件
-//   2. 使用团队资源管理器窗口连接到源代码管理
-//   3. 使用输出窗口查看生成输出和其他消息
-//   4. 使用错误列表窗口查看错误
-//   5. 转到“项目”>“添加新项”以创建新的代码文件，或转到“项目”>“添加现有项”以将现有代码文件添加到项目
-//   6. 将来，若要再次打开此项目，请转到“文件”>“打开”>“项目”并选择 .sln 文件
