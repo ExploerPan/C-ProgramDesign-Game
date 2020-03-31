@@ -28,38 +28,41 @@ typedef struct bomb {
 	bool isRight = false;
 }Bomb;
 
-IMAGE refresh1, refresh2,refresh3, bomb, bomb_mask;
+IMAGE refresh1, refresh2, refresh3, bomb, bomb_mask;
 
 void initwelcome(USER& user);		//初始化欢迎界面，音乐，登陆信息
 void initback();					  //初始化背景									
 void playMusic(int a, int b);			 //a.b表示音乐播放状态
 int judgeMessage(int x, int y);				//判断鼠标点击的按钮
 void showInfo(USER& user, int problemNum, int& problemSum);
-void showProblem(Problem *head,int isFinish,int problemNum, int& problemSum,USER& user);		//刷新显示题目
+void showProblem(Problem* head, int isFinish, int problemNum, int& problemSum, USER& user);		//刷新显示题目
 void showBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);				//显示炸弹
 void setAnswer(Problem* head, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum, int isFinish);//显示答案及标出正确炸弹的信息
-int judgechoice(int x,int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);	//判断玩家选择的答案
+int judgechoice(int x, int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);	//判断玩家选择的答案
 bool judgeTorF(int choice, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);		//判断玩家答案是否正确
+void gameover(int problemNum, int problemSum, USER& user);			 //判断是否做完所有题
 Problem* initProblem();							//初始化题目 建立链表
-Problem* hint(Problem *head, int problemNum);		//链表中删除题目
-Problem* insert(Problem *head,int& problemSum);		//链表中增加题目
+Problem* hint(Problem* head, int problemNum);		//链表中删除题目
+Problem* insert(Problem* head, int& problemSum);		//链表中增加题目
+void save(Problem* head, USER& user, int& problemNum, int& problemSum);
+PROBLEM* read(USER& user, int& problemNum, int& problemSum);
 
 int main() {
-	int message = 0, x = 0, y = 0, rightresult = 0,problemNum=1,problemSum=15;
+	int message = 0, x = 0, y = 0, rightresult = 0, problemNum = 1, problemSum = 15;
 
 	//音乐播放器状态，若Isinitial!=1,表明不是初次开始播放，music==1表示正在播放，music==-1则处于暂停
-	int music = -1, Isinitial = 0; 
+	int music = -1, Isinitial = 0;
 
 	//判断是否已经开始游戏，判断是否退出,判断上一道题是否回答结束,判断是否使用提示，判断是否增加题目
-	int isStart = 0, isExit = 0, isFinish = 0,isHint=0,isInsert;  
+	int isStart = 0, isExit = 0, isFinish = 0, isHint = 0, isInsert;
 
 	int n = 0, choice = 0;
 	USER user;
-	PROBLEM* head,*p;
+	PROBLEM* head, * p;
 	user.score = 0;
 	MOUSEMSG m;
 	//以下参数为:起始位置 x,起始位置y，存储的结果
-	Bomb bomb1 = { WIDTH - 1000,0,0 };			
+	Bomb bomb1 = { WIDTH - 1000,0,0 };
 	Bomb bomb2 = { WIDTH - 600,-250,0 };
 	Bomb bomb3 = { WIDTH - 900,-500,0 };
 	initwelcome(user);
@@ -70,8 +73,10 @@ int main() {
 		if (isStart == 1) {
 			showInfo(user, problemNum, problemSum);
 			showProblem(p, isFinish, problemNum, problemSum, user);
+			gameover(problemNum, problemSum, user);
 			setAnswer(p, bomb1, bomb2, bomb3, problemNum, isFinish);
 			showBomb(bomb1, bomb2, bomb3);
+
 			isFinish = 0;
 		}
 		while (MouseHit()) {
@@ -91,17 +96,23 @@ int main() {
 						MessageBox(NULL, "游戏已经开始了！", "提示", MB_OK | MB_SYSTEMMODAL);
 					}
 					break;
-				case 3 :
+				case 2:
+					save(head, user, problemNum, problemSum);
+					break;
+				case 3:
 					isHint = MessageBox(NULL, "确定要请求提示吗？\n提示将扣除20分！", "警告", MB_YESNO | MB_SYSTEMMODAL);
-					if(isHint == 6) {
-							head = hint(head, problemNum);
-							problemSum--;
-							user.score -= 20;							//使用一次提示扣除20分
-							isFinish = 1;
+					if (isHint == 6) {
+						head = hint(head, problemNum);
+						problemSum--;
+						user.score -= 20;							//使用一次提示扣除20分
+						isFinish = 1;
 					}
 					break;
+				case 4:
+					head=read(user, problemNum, problemSum);
+					break;
 				case 5:
-					isInsert=MessageBox(NULL, "准备好增加3个挑战了吗？", "提示", MB_YESNO | MB_SYSTEMMODAL);
+					isInsert = MessageBox(NULL, "准备好增加3个挑战了吗？", "提示", MB_YESNO | MB_SYSTEMMODAL);
 					if (isInsert == 6) {
 						head = insert(head, problemSum);
 					}
@@ -118,19 +129,25 @@ int main() {
 					playMusic(music, Isinitial);
 					break;
 				default:
-					choice=judgechoice(x,y,bomb1,bomb2,bomb3);
-					if (judgeTorF(choice, bomb1, bomb2, bomb3)&&choice!=0) {
+					choice = judgechoice(x, y, bomb1, bomb2, bomb3);
+					if (judgeTorF(choice, bomb1, bomb2, bomb3) && choice != 0) {
 						isFinish = 1;
 						problemNum++;
 						user.score += 10;
 					}
-					else if(!judgeTorF(choice, bomb1, bomb2, bomb3)&&choice!=0&&isStart!=0){
+					else if (!judgeTorF(choice, bomb1, bomb2, bomb3) && choice != 0 && isStart != 0) {
 						isFinish = 1;
 						problemNum++;
-						user.score = 0;
 						mciSendString("open music\\explode.mp3", 0, 0, 0);
 						mciSendString("play music\\explode.mp3 ", 0, 0, 0);
-						MessageBox(NULL, "拆错了一个炸弹！\n您的分数将被清零/(ㄒoㄒ)/~~", "提示", MB_OK | MB_SYSTEMMODAL);
+						if (user.score > 0) {
+							user.score = 0;
+							MessageBox(NULL, "拆错了一个炸弹！\n您的分数将被清零/(ㄒoㄒ)/~~", "提示", MB_OK | MB_SYSTEMMODAL);
+						}
+						else {
+							user.score -= 20;
+							MessageBox(NULL, "拆错了一个炸弹！\n您的分数已经是负数了！不能清零，只好减去20分啦\n加油啊/(ㄒoㄒ)/~~", "提示", MB_OK | MB_SYSTEMMODAL);
+						}
 						Sleep(500);
 						mciSendString("close music\\explode.mp3 ", 0, 0, 0);
 					}
@@ -139,7 +156,7 @@ int main() {
 					}
 					break;
 				}
-				
+
 			}
 		}
 	}
@@ -148,8 +165,8 @@ int main() {
 
 void initwelcome(USER& user)
 {
-	mciSendString("open music\\welcomemusic.mp3", 0, 0, 0);
-	mciSendString("play music\\welcomemusic.mp3 repeat", 0, 0, 0);
+	//mciSendString("open music\\welcomemusic.mp3", 0, 0, 0);
+	//mciSendString("play music\\welcomemusic.mp3 repeat", 0, 0, 0);
 	initgraph(WIDTH, HEIGHT);
 	loadimage(NULL, "image\\welcomebackground.jpg", WIDTH, HEIGHT);
 
@@ -162,7 +179,7 @@ void initwelcome(USER& user)
 	outtextxy(WIDTH / 2 + 400, HEIGHT / 2 - 150, "Score: ");
 	outtextxy(WIDTH / 2 + 450, HEIGHT / 2 - 150, buf);
 
-	mciSendString("close music\\welcomemusic.mp3", 0, 0, 0);
+	//mciSendString("close music\\welcomemusic.mp3", 0, 0, 0);
 }
 
 void initback() {
@@ -299,31 +316,30 @@ PROBLEM* initProblem() {
 		}
 		num++;
 	}
-		return head;
-	
+	return head;
+
 }
 
 void showInfo(USER& user, int problemNum, int& problemSum) {
 	char buf[10];
-	clearrectangle(WIDTH-350,HEIGHT/2-325,WIDTH-150,HEIGHT/2-125);
-	putimage(WIDTH-349,HEIGHT/2-325,&refresh3);
-	outtextxy(WIDTH - 300, HEIGHT/2-350, "昵称: ");
-	outtextxy(WIDTH - 200, HEIGHT/2-350, user.name);
+	clearrectangle(WIDTH - 350, HEIGHT / 2 - 325, WIDTH - 150, HEIGHT / 2 - 125);
+	putimage(WIDTH - 349, HEIGHT / 2 - 325, &refresh3);
+	outtextxy(WIDTH - 300, HEIGHT / 2 - 350, "昵称: ");
+	outtextxy(WIDTH - 200, HEIGHT / 2 - 350, user.name);
 
-	sprintf_s(buf, "%d", user.score); 
+	sprintf_s(buf, "%d", user.score);
 	outtextxy(WIDTH - 300, HEIGHT / 2 - 300, "分数: ");
 	outtextxy(WIDTH - 200, HEIGHT / 2 - 300, buf);
 
-	if (problemNum == 1) problemNum--;
-	sprintf_s(buf, "%d", problemSum - problemNum);
+	sprintf_s(buf, "%d", problemSum - problemNum+1);
 	outtextxy(WIDTH - 300, HEIGHT / 2 - 250, "剩余：");
 	outtextxy(WIDTH - 200, HEIGHT / 2 - 250, buf);
-	
+
 }
 
-void showProblem(Problem* p,int isFinish,int problemNum, int& problemSum,USER&user){
+void showProblem(Problem* p, int isFinish, int problemNum, int& problemSum, USER& user) {
 	char s[10];
-	if (isFinish == 1&&problemNum<= problemSum) {
+	if (isFinish == 1 && problemNum <= problemSum) {
 		while (p->num != problemNum) {
 			p = p->next;
 		}
@@ -340,15 +356,7 @@ void showProblem(Problem* p,int isFinish,int problemNum, int& problemSum,USER&us
 		outtextxy(WIDTH - 140, HEIGHT / 2 - 50, "=");
 
 		outtextxy(WIDTH - 90, HEIGHT / 2 - 50, "?");
-	}//判断是否做完所有题
-	else if (problemNum > problemSum) {
-		wsprintf(s, "%d", user.score);
-		MessageBox(NULL, "已经没有炸弹了", "提示", MB_OK | MB_SYSTEMMODAL);
-		MessageBox(NULL,s, "您的得分：",MB_SYSTEMMODAL);
-		exit(0);
 	}
-
-	
 }
 
 void showBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3) {
@@ -391,7 +399,7 @@ void showBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3) {
 	}
 }
 
-void setAnswer(Problem* p,Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum,int isFinish) {
+void setAnswer(Problem* p, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum, int isFinish) {
 	int n = 0;
 	if (isFinish == 1) {
 		while (p->num != problemNum) {
@@ -439,7 +447,7 @@ void setAnswer(Problem* p,Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum,
 
 int judgechoice(int x, int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3) {
 	if (x > bomb1.x&& x<bomb1.x + 240 && y>bomb1.y&& y < bomb1.y + 160) {
-		 return 1;
+		return 1;
 	}
 	else if (x > bomb2.x&& x<bomb2.x + 240 && y>bomb2.y&& y < bomb2.y + 160) {
 		return 2;
@@ -454,26 +462,50 @@ int judgechoice(int x, int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3) {
 
 bool judgeTorF(int choice, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3) {
 	int rightchoice = 0;
-		if (bomb1.isRight == true) {
-			rightchoice = 1;
-		}
-		else if (bomb2.isRight == true) {
-			rightchoice = 2;
-		}
-		else if (bomb3.isRight == true) {
-			rightchoice = 3;
-		}
-		if (rightchoice == choice) {
-			return true;
-		}
-		else {
-			return false;
-		}
-	
+	if (bomb1.isRight == true) {
+		rightchoice = 1;
+	}
+	else if (bomb2.isRight == true) {
+		rightchoice = 2;
+	}
+	else if (bomb3.isRight == true) {
+		rightchoice = 3;
+	}
+	if (rightchoice == choice) {
+		return true;
+	}
+	else {
+		return false;
+	}
+
+}
+
+void gameover(int problemNum,int problemSum,USER&user) {
+	char s[10];
+	if(problemNum > problemSum) {
+
+		clearrectangle(WIDTH - 350, HEIGHT / 2 - 325, WIDTH - 150, HEIGHT / 2 - 125);
+		putimage(WIDTH - 349, HEIGHT / 2 - 325, &refresh3);
+		outtextxy(WIDTH - 300, HEIGHT / 2 - 350, "昵称: ");
+		outtextxy(WIDTH - 200, HEIGHT / 2 - 350, user.name);
+
+		sprintf_s(s, "%d", user.score);
+		outtextxy(WIDTH - 300, HEIGHT / 2 - 300, "分数: ");
+		outtextxy(WIDTH - 200, HEIGHT / 2 - 300, s);
+
+		sprintf_s(s, "%d", problemSum - problemNum + 1);
+		outtextxy(WIDTH - 300, HEIGHT / 2 - 250, "剩余：");
+		outtextxy(WIDTH - 200, HEIGHT / 2 - 250, s);
+	wsprintf(s, "%d", user.score);
+	MessageBox(NULL, "已经没有炸弹了", "提示", MB_OK | MB_SYSTEMMODAL);
+	MessageBox(NULL, s, "您的得分：", MB_SYSTEMMODAL);
+
+	exit(0);
+	}
 }
 
 Problem* hint(Problem* head, int problemNum) {
-	Problem* p,*q,*h;
+	Problem* p, * q, * h;
 	char s[10];
 	q = head;
 	while (q->num != problemNum) {
@@ -483,19 +515,19 @@ Problem* hint(Problem* head, int problemNum) {
 	h = q->next;
 	wsprintf(s, "%d", q->result);
 	MessageBox(NULL, s, "正确答案", MB_SYSTEMMODAL);
-	while (h!= NULL) {
+	while (h != NULL) {
 		h->num--;
 		h = h->next;
 	}
 	if (q == head) {
 		head = q->next;
-		free(q); 
+		free(q);
 	}
-	else if(q->next==NULL){
+	else if (q->next == NULL) {
 		p->next = NULL;
 		free(q);
 	}
-	else{
+	else {
 		p->next = q->next;
 		free(q);
 	}
@@ -504,7 +536,7 @@ Problem* hint(Problem* head, int problemNum) {
 
 Problem* insert(Problem* head, int& problemSum) {
 	int num = 1;
-	Problem* p,*q,*r=NULL,*h=NULL;
+	Problem* p, * q, * r = NULL, * h = NULL;
 	p = head;
 	for (num = 1; num <= 3; num++) {
 		q = (PROBLEM*)malloc(sizeof(PROBLEM));
@@ -537,10 +569,50 @@ Problem* insert(Problem* head, int& problemSum) {
 		}
 	}
 	//找到当前题库链表的尾
-	while (p->next!= NULL) {
+	while (p->next != NULL) {
 		p = p->next;
 	}
 	p->next = h;
 	problemSum += 3;
 	return head;
+}
+
+void save(Problem* head, USER& user, int& problemNum, int& problemSum) {
+	FILE* fp;
+	Problem* p;
+	p = head;
+	fp = fopen("game.txt", "w");
+	fprintf(fp, "%d\n%d\n%d\n", user.score, problemSum, problemNum);
+	while (p != NULL) {
+		fprintf(fp, "%d\t%d%c%d %d\n", p->num, p->number1, p->operation, p->number2, p->result);
+		p = p->next;
+	}
+	fclose(fp);
+	MessageBox(NULL, "保存完毕", "提示", MB_OK | MB_SYSTEMMODAL);
+}
+
+PROBLEM* read(USER& user, int& problemNum, int& problemSum) {
+	FILE* fp;
+	Problem* p,*h=NULL,*r=NULL;
+	int num = 1;
+	fp = fopen("game.txt", "r");
+	fscanf(fp, "%d\n%d\n%d\n", &user.score, &problemSum, &problemNum);
+	printf("%d %d %d",user.score,problemSum,problemNum);
+	while (num <= problemSum) {
+		p = (PROBLEM*)malloc(sizeof(PROBLEM));
+		fscanf(fp, "%d\t%d%c%d %d\n", &p->num, &p->number1, &p->operation, &p->number2, &p->result);
+		p->next = NULL;
+		if (h == NULL) {
+			h = p;
+			r = p;
+		}
+		else {
+			r->next = p;
+			r = p;
+		}
+		num++;
+	}
+	fclose(fp);
+	return h;
+		
 }
