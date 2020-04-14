@@ -32,7 +32,7 @@ IMAGE refresh1, refresh2, refresh3, bomb, bomb_mask;
 
 void initwelcome(USER& user);		//初始化欢迎界面，音乐，登陆信息
 void initback();			//初始化背景
-void showList(int problemNum, int problemSum, int RestTime);
+//void showUserList(int problemNum, int problemSum, int RestTime);
 void playMusic(int a, int b);			 //a.b表示音乐播放状态
 int judgeMessage(int x, int y);				//判断鼠标点击的按钮
 void showInfo(USER& user, int problemNum, int& problemSum,int RestTime);
@@ -41,12 +41,12 @@ void showBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);				//显示炸弹
 void setAnswer(Problem* head, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum, int isFinish);//显示答案及标出正确炸弹的信息
 int judgechoice(int x, int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);	//判断玩家选择的答案
 bool judgeTorF(int choice, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);		//判断玩家答案是否正确
-void gameover(int problemNum, int problemSum,int RestTime, USER& user);			 //判断是否做完所有题
+void gameover(int problemNum, int problemSum,int RestTime, USER& user); //进行游戏结束的操作
 Problem* initProblem();							//初始化题目 建立链表
 Problem* hint(Problem* head, int problemNum);		//链表中删除题目
 Problem* insert(Problem* head, int& problemSum);		//链表中增加题目
-void save(Problem* head, USER& user, int& problemNum, int& problemSum);
-PROBLEM* read(USER& user, int& problemNum, int& problemSum);
+void save(Problem* head, USER& user, int& problemNum, int& problemSum, int& RestTime);
+PROBLEM* read(USER& user, int& problemNum, int& problemSum, int& RestTime);
 void restTime(int& t,int &RestTime);
 
 
@@ -59,7 +59,8 @@ int main() {
 	//判断是否已经开始游戏，判断是否退出,判断上一道题是否回答结束,判断是否使用提示，判断是否增加题目
 	int isStart = 0, isExit = 0, isFinish = 0, isHint = 0, isInsert;
 
-	int n = 0, choice = 0,RestTime=90,t=0; //RestTime为剩余时间,t为循环次数，t=10则时间少一秒
+	int n = 0, choice = 0, RestTime=90, t=0; //RestTime为剩余时间,t为循环次数，t=10则时间少一秒
+
 	USER user;
 	PROBLEM* head, * p;
 	user.score = 0;
@@ -78,7 +79,6 @@ int main() {
 			showInfo(user, problemNum, problemSum,RestTime);
 			showProblem(p, isFinish, problemNum, problemSum, user);
 			gameover(problemNum, problemSum,RestTime, user);
-			showList(problemNum, problemSum, RestTime);
 			setAnswer(p, bomb1, bomb2, bomb3, problemNum, isFinish);
 			showBomb(bomb1, bomb2, bomb3);
 			isFinish = 0;
@@ -101,7 +101,7 @@ int main() {
 					}
 					break;
 				case 2:
-					save(head, user, problemNum, problemSum);
+					save(head, user, problemNum, problemSum, RestTime);
 					break;
 				case 3:
 					mciSendString("play music\\message.mp3 ", 0, 0, 0);
@@ -114,7 +114,8 @@ int main() {
 					}
 					break;
 				case 4:
-					head=read(user, problemNum, problemSum);
+					head=read(user, problemNum, problemSum, RestTime);
+					isFinish = 1;
 					break;
 				case 5:
 					mciSendString("play music\\message.mp3 ", 0, 0, 0);
@@ -231,12 +232,10 @@ void initback() {
 
 	getimage(&refresh1, WIDTH - 1000, 0, 650, HEIGHT);					//刷新炸弹显示区
 	getimage(&refresh2, WIDTH - 300, HEIGHT / 2 - 50, 300, 50);			//刷新当前题目
-	getimage(&refresh3, WIDTH - 349, HEIGHT / 2 - 325, 349, 201);		//刷新分数、剩余题目、时间区域
+	getimage(&refresh3, WIDTH - 349, HEIGHT / 2 - 400, 349, 276);		//刷新分数、剩余题目、时间区域
 
-	//loadimage(&list, "image\\list.jpg", WIDTH, HEIGHT);					//加载结束后的排行榜背景
 	loadimage(&bomb, "image\\bomb.jpg", 240, 160);					
 	loadimage(&bomb_mask, "image\\bomb_mask.jpg", 240, 160);
-
 }
 
 int judgeMessage(int x, int y) {
@@ -326,18 +325,27 @@ PROBLEM* initProblem() {
 
 }
 
-void showList(int problemNum, int problemSum, int RestTime) {
+/*void showUserList(int problemNum, int problemSum, int RestTime) {
 	if (problemNum > problemSum || RestTime == 0) {
+		IMAGE list, list_mask,listgraph;
 		initgraph(WIDTH, HEIGHT);
-		loadimage(NULL, "image\\listgraph.jpg", WIDTH, HEIGHT);
-		Sleep(50000000);
+		//loadimage(NULL, "image\\listgraph.jpg", WIDTH, HEIGHT);
+
+		loadimage(&list, "image\\list.jpg",400,150);
+		loadimage(&list_mask, "image\\list_mask.jpg",400,150);
+		
+		putimage(WIDTH / 2 - 200, 50, &list_mask, SRCAND);
+		putimage(WIDTH / 2 - 200, 50, &list, SRCPAINT);
+
+		//Sleep(50000000);
+		system("pause");
 	}
-}
+}*/
 
 void showInfo(USER& user, int problemNum, int& problemSum,int RestTime) {
 	char buf[10];
-	clearrectangle(WIDTH - 350, HEIGHT / 2 - 325, WIDTH - 150, HEIGHT / 2 - 125);
-	putimage(WIDTH - 349, HEIGHT / 2 - 325, &refresh3);
+	clearrectangle(WIDTH - 350, HEIGHT / 2 - 400, WIDTH - 150, HEIGHT / 2 - 125);
+	putimage(WIDTH - 349, HEIGHT / 2 - 400, &refresh3);
 	outtextxy(WIDTH - 300, HEIGHT / 2 - 350, "昵称: ");
 	outtextxy(WIDTH - 200, HEIGHT / 2 - 350, user.name);
 
@@ -519,7 +527,7 @@ void gameover(int problemNum,int problemSum,int RestTime,USER&user) {
 			fprintf(fp, "%s\t%d\n", user.name, user.score);
 			fclose(fp);
 		}
-		
+		exit(0);
 	}
 	if (RestTime == 0) {
 		wsprintf(s, "%d", user.score);
@@ -531,7 +539,7 @@ void gameover(int problemNum,int problemSum,int RestTime,USER&user) {
 			fprintf(fp, "%s\t%d\n", user.name, user.score);
 			fclose(fp);
 		}
-		
+		exit(0);
 	}
 }
 
@@ -608,7 +616,7 @@ Problem* insert(Problem* head, int& problemSum) {
 	return head;
 }
 
-void save(Problem* head, USER& user, int& problemNum, int& problemSum) {
+void save(Problem* head, USER& user, int& problemNum, int& problemSum, int& RestTime) {
 	FILE* fp;
 	Problem* p;
 	p = head;
@@ -616,9 +624,9 @@ void save(Problem* head, USER& user, int& problemNum, int& problemSum) {
 	if (fp != NULL) {
 		mciSendString("play music\\message.mp3 ", 0, 0, 0);
 		MessageBox(NULL, "保存完毕", "提示", MB_OK | MB_SYSTEMMODAL);
-		fprintf(fp, "%d\n%d\n%d\n", user.score, problemSum, problemNum);
+		fprintf(fp, "%s\n%d\n%d\n%d\n%d\n", user.name,user.score, problemSum, problemNum,RestTime);
 		while (p != NULL) {
-		fprintf(fp, "%d\t%d%c%d %d\n", p->num, p->number1, p->operation, p->number2, p->result);
+		fprintf(fp, "%d\t%d%c%d %d\n",p->num, p->number1, p->operation, p->number2, p->result);
 		p = p->next;
 	}
 		fclose(fp);	
@@ -626,7 +634,7 @@ void save(Problem* head, USER& user, int& problemNum, int& problemSum) {
 	
 }
 
-PROBLEM* read(USER& user, int& problemNum, int& problemSum) {
+PROBLEM* read(USER& user, int& problemNum, int& problemSum,int& RestTime) {
 	FILE* fp;
 	Problem* p,*h=NULL,*r=NULL;
 	int num = 1;
@@ -634,10 +642,10 @@ PROBLEM* read(USER& user, int& problemNum, int& problemSum) {
 	if (fp != NULL) {
 		mciSendString("play music\\message.mp3 ", 0, 0, 0);
 		MessageBox(NULL, "读取成功", "提示", MB_OK | MB_SYSTEMMODAL);
-		fscanf(fp, "%d\n%d\n%d\n", &user.score, &problemSum, &problemNum);
+		fscanf(fp, "%s\n%d\n%d\n%d\n%d\n",&user.name, &user.score, &problemSum, &problemNum, &RestTime);
 		while (num <= problemSum) {
 			p = (PROBLEM*)malloc(sizeof(PROBLEM));
-			fscanf(fp, "%d\t%d%c%d %d\n", &p->num, &p->number1, &p->operation, &p->number2, &p->result);
+			fscanf(fp, "%d\t%d%c%d %d\n",&p->num, &p->number1, &p->operation, &p->number2, &p->result);
 			p->next = NULL;
 			if (h == NULL) {
 				h = p;
