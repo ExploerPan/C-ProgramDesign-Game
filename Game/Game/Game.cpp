@@ -30,25 +30,23 @@ typedef struct bomb {
 
 IMAGE refresh1, refresh2, refresh3, bomb, bomb_mask;
 
-void initwelcome(USER& user);		//初始化欢迎界面，音乐，登陆信息
-void initback();			//初始化背景
-//void showUserList(int problemNum, int problemSum, int RestTime);
-void playMusic(int a, int b);			 //a.b表示音乐播放状态
-int judgeMessage(int x, int y);				//判断鼠标点击的按钮
-void showInfo(USER& user, int problemNum, int& problemSum,int RestTime);
-void showProblem(Problem* head, int isFinish, int problemNum, int& problemSum, USER& user);		//刷新显示题目
-void showBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);				//显示炸弹
+void initwelcome(USER& user);//初始化欢迎界面及登陆信息
+void initback();//初始化背景
+void playMusic(int a, int b);//a.b表示音乐播放状态
+int judgeMessage(int x, int y);	//判断鼠标点击的按钮
+void showInfo(USER& user, int problemNum, int& problemSum,int RestTime);//显示用户信息
+void showProblem(Problem* head, int isFinish, int problemNum, int& problemSum, USER& user);//刷新显示题目
+void showBomb(Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);//显示炸弹动画效果
 void setAnswer(Problem* head, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum, int isFinish);//显示答案及标出正确炸弹的信息
-int judgechoice(int x, int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);	//判断玩家选择的答案
-bool judgeTorF(int choice, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);		//判断玩家答案是否正确
+int judgechoice(int x, int y, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);//判断玩家选择的答案
+bool judgeTorF(int choice, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3);//判断玩家答案是否正确
 void gameover(int problemNum, int problemSum,int RestTime, USER& user); //进行游戏结束的操作
-Problem* initProblem();							//初始化题目 建立链表
-Problem* hint(Problem* head, int problemNum);		//链表中删除题目
-Problem* insert(Problem* head, int& problemSum);		//链表中增加题目
-void save(Problem* head, USER& user, int& problemNum, int& problemSum, int& RestTime);
-PROBLEM* read(USER& user, int& problemNum, int& problemSum, int& RestTime);
-void restTime(int& t,int &RestTime);
-
+Problem* initProblem();//初始化题目 建立链表
+Problem* hint(Problem* head, int problemNum);//链表中删除题目
+Problem* insert(Problem* head, int& problemSum);//链表中增加题目
+void save(Problem* head, USER& user, int& problemNum, int& problemSum, int& RestTime);//存档
+PROBLEM* read(USER& user, int& problemNum, int& problemSum, int& RestTime);//读档
+void restTime(int& t,int &RestTime);//剩余时间功能
 
 int main() {
 	int message = 0, x = 0, y = 0, rightresult = 0, problemNum = 1, problemSum = 15;
@@ -325,23 +323,6 @@ PROBLEM* initProblem() {
 
 }
 
-/*void showUserList(int problemNum, int problemSum, int RestTime) {
-	if (problemNum > problemSum || RestTime == 0) {
-		IMAGE list, list_mask,listgraph;
-		initgraph(WIDTH, HEIGHT);
-		//loadimage(NULL, "image\\listgraph.jpg", WIDTH, HEIGHT);
-
-		loadimage(&list, "image\\list.jpg",400,150);
-		loadimage(&list_mask, "image\\list_mask.jpg",400,150);
-		
-		putimage(WIDTH / 2 - 200, 50, &list_mask, SRCAND);
-		putimage(WIDTH / 2 - 200, 50, &list, SRCPAINT);
-
-		//Sleep(50000000);
-		system("pause");
-	}
-}*/
-
 void showInfo(USER& user, int problemNum, int& problemSum,int RestTime) {
 	char buf[10];
 	clearrectangle(WIDTH - 350, HEIGHT / 2 - 400, WIDTH - 150, HEIGHT / 2 - 125);
@@ -447,7 +428,6 @@ void setAnswer(Problem* p, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum
 				bomb1.isRight = true;
 				bomb2.isRight = false;
 				bomb3.isRight = false;
-				printf("%d ", bomb1.RightResult);
 				bomb2.RightResult = rand() % 201;
 				bomb3.RightResult = rand() % 101;
 			} while (bomb1.RightResult == bomb2.RightResult || bomb1.RightResult == bomb3.RightResult);
@@ -458,7 +438,6 @@ void setAnswer(Problem* p, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum
 				bomb1.isRight = false;
 				bomb2.isRight = true;
 				bomb3.isRight = false;
-				printf("%d ", bomb2.RightResult);
 				bomb1.RightResult = rand() % 201;
 				bomb3.RightResult = rand() % 101;
 			} while (bomb2.RightResult == bomb1.RightResult || bomb2.RightResult == bomb3.RightResult);
@@ -469,7 +448,6 @@ void setAnswer(Problem* p, Bomb& bomb1, Bomb& bomb2, Bomb& bomb3, int problemNum
 				bomb1.isRight = false;
 				bomb2.isRight = false;
 				bomb3.isRight = true;
-				printf("%d ", bomb3.RightResult);
 				bomb2.RightResult = rand() % 201;
 				bomb1.RightResult = rand() % 101;
 			} while (bomb3.RightResult == bomb1.RightResult || bomb3.RightResult == bomb2.RightResult);
