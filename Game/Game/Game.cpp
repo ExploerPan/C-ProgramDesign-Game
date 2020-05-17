@@ -175,13 +175,6 @@ void initwelcome(USER& user)
 	loadimage(NULL, "image\\welcomebackground.jpg", WIDTH, HEIGHT);
 
 	InputBox(user.name, 20, "请输入您的昵称：");
-	outtextxy(WIDTH / 2 + 400, HEIGHT / 2 - 200, "昵称： ");
-	outtextxy(WIDTH / 2 + 450, HEIGHT / 2 - 200, user.name);
-
-	char buf[10];
-	sprintf_s(buf, "%d", user.score); 
-	outtextxy(WIDTH / 2 + 400, HEIGHT / 2 - 150, "Score: ");
-	outtextxy(WIDTH / 2 + 450, HEIGHT / 2 - 150, buf);
 
 }
 
